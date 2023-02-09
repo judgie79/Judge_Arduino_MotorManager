@@ -5,24 +5,23 @@
 #include <DebugOut.h>
 #include <NullCheck.h>
 
-#include <MotorSensor.h>
-#include <SensorManager.h>
+#include <DirectionTriggerSensor.h>
+#include <DirectionSensorManager.h>
 #include <DistanceDevice.h>
-#include <DistanceSensor.h>
 #include <RegisteredSensors.h>
 #include "MotorController.h"
 
-typedef void(*SensorTriggered) (MotorSensor *sensor);
+typedef void(*SensorTriggered) (DirectionTriggerSensor *sensor);
 typedef void(*PositionReached) (uint16_t pos);
 
 class MotorManager {
 public:
   MotorManager(uint8_t L_EN, uint8_t R_EN, uint8_t L_PWM, uint8_t R_PWM);
-  MotorManager(uint8_t L_EN, uint8_t R_EN, uint8_t L_PWM, uint8_t R_PWM, MotorSensor **sensors, uint16_t sensorCount, DistanceDevice *distanceDevice);
+  MotorManager(uint8_t L_EN, uint8_t R_EN, uint8_t L_PWM, uint8_t R_PWM, DirectionTriggerSensor **sensors, uint16_t sensorCount, DistanceDevice *distanceDevice);
   MotorManager(BTS7960 *motor);
-  MotorManager(BTS7960 *motor, MotorSensor **sensors, uint16_t sensorCount, DistanceDevice *distanceDevice);
+  MotorManager(BTS7960 *motor, DirectionTriggerSensor **sensors, uint16_t sensorCount, DistanceDevice *distanceDevice);
 
-  SensorManager *sensorManager;
+  DirectionSensorManager *sensorManager;
 
   void begin();
   void begin(uint16_t *steps, uint16_t posCount);
@@ -72,9 +71,9 @@ private:
   void motorOnSensorReachedOnce(uint16_t sensorIndex);
   void motorOnSensorReached(uint16_t sensorIndex);
 
-  bool checkForPos(MotorSensor *sensor, uint16_t sensorIndex);
+  bool checkForPos(DirectionTriggerSensor *sensor, uint16_t sensorIndex);
 
-  bool checkForForce(MotorSensor *sensor, uint16_t sensorIndex);
+  bool checkForForce(DirectionTriggerSensor *sensor, uint16_t sensorIndex);
 
   void motorOnError(String error);
   uint16_t stepCount;

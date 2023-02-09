@@ -7,9 +7,9 @@ MotorManager::MotorManager(BTS7960 *motor) : _motorController(motor)
   this->sensorManager = nullptr;
 }
 
-MotorManager::MotorManager(BTS7960 *motor, MotorSensor **sensors, uint16_t sensorCount, DistanceDevice *distanceDevice) : _motorController(motor)
+MotorManager::MotorManager(BTS7960 *motor, DirectionTriggerSensor **sensors, uint16_t sensorCount, DistanceDevice *distanceDevice) : _motorController(motor)
 {
-  this->sensorManager = new SensorManager(sensors, sensorCount, distanceDevice);
+  this->sensorManager = new DirectionSensorManager(sensors, sensorCount, distanceDevice);
 }
 
 MotorManager::MotorManager(uint8_t L_EN, uint8_t R_EN, uint8_t L_PWM, uint8_t R_PWM) : _motorController(L_EN, R_EN, L_PWM, R_PWM)
@@ -17,11 +17,11 @@ MotorManager::MotorManager(uint8_t L_EN, uint8_t R_EN, uint8_t L_PWM, uint8_t R_
   this->sensorManager = nullptr;
 }
 
-MotorManager::MotorManager(uint8_t L_EN, uint8_t R_EN, uint8_t L_PWM, uint8_t R_PWM, MotorSensor **sensors, uint16_t sensorCount, DistanceDevice *distanceDevice) : _motorController(L_EN, R_EN, L_PWM, R_PWM)
+MotorManager::MotorManager(uint8_t L_EN, uint8_t R_EN, uint8_t L_PWM, uint8_t R_PWM, DirectionTriggerSensor **sensors, uint16_t sensorCount, DistanceDevice *distanceDevice) : _motorController(L_EN, R_EN, L_PWM, R_PWM)
 {
   // this->sensors = sensors;
   // this->sensorCount = sensorCount;
-  this->sensorManager = new SensorManager(sensors, sensorCount, distanceDevice);
+  this->sensorManager = new DirectionSensorManager(sensors, sensorCount, distanceDevice);
 }
 
 void MotorManager::begin()
@@ -53,7 +53,7 @@ void MotorManager::begin(uint16_t *steps, uint16_t posCount)
     for (size_t i = 0; i < this->stepCount; i++)
     {
       uint16_t id = sc + i;
-      sensorManager->addDistanceSensor(id, "POS" + String(i), this->steps[i], SensorTriggerType::Position, SensorTriggerDirection::Both);
+      sensorManager->addDistanceSensor(id, "POS" + String(i), this->steps[i], SensorTriggerType::Info, SensorTriggerDirection::Both);
     }
   }
 }
@@ -66,12 +66,12 @@ void MotorManager::setSteps(uint16_t *steps, uint16_t posCount)
   if (norNull(sensorManager))
   {
 
-    sensorManager->removeSensors(SensorTriggerType::Position);
+    sensorManager->removeSensors(SensorTriggerType::Info);
     uint16_t sc = sensorManager->getSensorCount();
     for (size_t i = 0; i < this->stepCount; i++)
     {
       uint16_t id = sc + i;
-      sensorManager->addDistanceSensor(id, "POS" + String(i), this->steps[i], SensorTriggerType::Position, SensorTriggerDirection::Both);
+      sensorManager->addDistanceSensor(id, "POS" + String(i), this->steps[i], SensorTriggerType::Info, SensorTriggerDirection::Both);
     }
   }
 }
@@ -89,7 +89,7 @@ void MotorManager::read()
 
   if (norNull(sensorManager))
   {
-    MotorSensor *sensor = sensorManager->lastTriggeredSensor();
+    DirectionTriggerSensor *sensor = sensorManager->lastTriggeredSensor();
     if (norNull(sensor))
     {
       if (sensor->isTriggered())
@@ -194,9 +194,9 @@ void MotorManager::reverse(bool clear)
 void MotorManager::gotoPos(uint16_t pos)
 {
   LOGD_INFO("goto " + String(pos));
-  RegisteredSensors posSensors = sensorManager->getSensors(SensorTriggerType::Position);
+  RegisteredSensors<DirectionTriggerSensor> posSensors = sensorManager->getSensors(SensorTriggerType::Info);
 
-  MotorSensor *posSensor = posSensors.sensors[pos];
+  DirectionTriggerSensor *posSensor = posSensors.sensors[pos];
   if (norNull(posSensor))
   {
     travelToStepStarted = true;
@@ -234,14 +234,14 @@ void MotorManager::move()
 
   if (triggerDirection != SensorTriggerDirection::None)
   {
-    RegisteredSensors forceStopSensors = sensorManager->getSensors(SensorTriggerType::ForceStop, new SensorTriggerDirection[1]{triggerDirection}, 1);
+    RegisteredSensors<DirectionTriggerSensor> forceStopSensors = sensorManager->getSensors(SensorTriggerType::Force, new SensorTriggerDirection[1]{triggerDirection}, 1);
 
     bool foundTriggered = false;
     if (forceStopSensors.sensorCount > 0 && norNull(forceStopSensors.sensors))
     {
       for (size_t i = 0; i < forceStopSensors.sensorCount; i++)
       {
-        MotorSensor *sensor = forceStopSensors.sensors[i];
+        DirectionTriggerSensor *sensor = forceStopSensors.sensors[i];
 
         if (norNull(sensor))
         {
@@ -267,7 +267,7 @@ void MotorManager::move()
 void MotorManager::motorOnSensorReachedOnce(uint16_t sensorIndex)
 {
 
-  MotorSensor *sensor = sensorManager->getSensors().sensors[sensorIndex];
+  DirectionTriggerSensor *sensor = sensorManager->getSensors().sensors[sensorIndex];
 
   if (isNull(sensor))
   {
@@ -283,9 +283,9 @@ void MotorManager::motorOnSensorReachedOnce(uint16_t sensorIndex)
   }
 }
 
-bool MotorManager::checkForForce(MotorSensor *sensor, uint16_t sensorIndex)
+bool MotorManager::checkForForce(DirectionTriggerSensor *sensor, uint16_t sensorIndex)
 {
-  if (sensor->getTriggerType() != SensorTriggerType::ForceStop)
+  if (sensor->getTriggerType() != SensorTriggerType::Force)
   {
     return false;
   }
@@ -322,18 +322,18 @@ bool MotorManager::checkForForce(MotorSensor *sensor, uint16_t sensorIndex)
   return true;
 }
 
-bool MotorManager::checkForPos(MotorSensor *sensor, uint16_t sensorIndex)
+bool MotorManager::checkForPos(DirectionTriggerSensor *sensor, uint16_t sensorIndex)
 {
-  if (sensor->getTriggerType() != SensorTriggerType::Position)
+  if (sensor->getTriggerType() != SensorTriggerType::Info)
   {
     return false;
   }
 
   if (travelToStepStarted)
   {
-    RegisteredSensors posSensors = sensorManager->getSensors(SensorTriggerType::Position);
+    RegisteredSensors<DirectionTriggerSensor> posSensors = sensorManager->getSensors(SensorTriggerType::Info);
 
-    MotorSensor *posSensor = posSensors.sensors[travelToStepTrigger];
+    DirectionTriggerSensor *posSensor = posSensors.sensors[travelToStepTrigger];
 
     if (norNull(posSensor))
     {
@@ -369,7 +369,7 @@ bool MotorManager::checkForPos(MotorSensor *sensor, uint16_t sensorIndex)
 void MotorManager::motorOnSensorReached(uint16_t sensorIndex)
 {
 
-  MotorSensor *sensor = sensorManager->getSensors().sensors[sensorIndex];
+  DirectionTriggerSensor *sensor = sensorManager->getSensors().sensors[sensorIndex];
 
   if (sensor == NULL || sensor == nullptr)
   {
@@ -401,7 +401,7 @@ bool MotorManager::initPositions()
       // start init and move to back pos
       initializing = true;
 
-      // MotorSensor **distanceSensors = sensorManager->getSensors(SensorTriggerType::Position);
+      // DirectionTriggerSensor **distanceSensors = sensorManager->getSensors(SensorTriggerType::Info);
 
       gotoPos(defaultStep);
     }

@@ -14,7 +14,7 @@ const int frontEndSensorPin = 7; // the number of the pushbutton pin of the fron
 ButtonSensor backEndSensor(0, "START", SensorType::Trigger, SensorTriggerType::ForceStop, SensorTriggerDirection::Backward, backEndSensorPin, INPUT_PULLUP);
 ButtonSensor frontEndSensor(1, "END", SensorType::Trigger, SensorTriggerType::ForceStop, SensorTriggerDirection::Forward, frontEndSensorPin, INPUT_PULLUP);
 
-MotorSensor** defaultSensors = new MotorSensor * [2] { &backEndSensor, & frontEndSensor };
+TriggerSensor** defaultSensors = new TriggerSensor * [2] { &backEndSensor, & frontEndSensor };
 
 uint8_t R_EN = A0;  // the number of the R_EN pin connected to the motor
 uint8_t L_EN = A1;  // the number of the L_EN pin connected to the motor
