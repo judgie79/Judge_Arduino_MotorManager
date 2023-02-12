@@ -1,6 +1,7 @@
 #ifndef MOTORMANAGER_h
 #define MOTORMANAGER_h
 #include "Arduino.h"
+#include <BTS7960.h>
 #include <LinkedList.h>
 #include <DebugOut.h>
 #include <NullCheck.h>
@@ -9,27 +10,35 @@
 #include <DirectionSensorManager.h>
 #include <DistanceDevice.h>
 #include <RegisteredSensors.h>
-#include "MotorController.h"
 
 typedef void(*SensorTriggered) (DirectionTriggerSensor *sensor);
-typedef void(*PositionReached) (uint16_t pos);
+typedef void(*PositionReached) (uint8_t pos);
+
+const uint8_t MAX_SPEED = 255;
+const uint8_t MIN_SPEED = 0;
+
+enum class Direction : int8_t {
+  FORWARD = 1,
+  BACKWARD = -1,
+  NONE = 0
+};
 
 class MotorManager {
 public:
   MotorManager(uint8_t L_EN, uint8_t R_EN, uint8_t L_PWM, uint8_t R_PWM);
-  MotorManager(uint8_t L_EN, uint8_t R_EN, uint8_t L_PWM, uint8_t R_PWM, DirectionTriggerSensor **sensors, uint16_t sensorCount, DistanceDevice *distanceDevice);
+  MotorManager(uint8_t L_EN, uint8_t R_EN, uint8_t L_PWM, uint8_t R_PWM, DirectionTriggerSensor **sensors, uint8_t sensorCount, DistanceDevice *distanceDevice);
   MotorManager(BTS7960 *motor);
-  MotorManager(BTS7960 *motor, DirectionTriggerSensor **sensors, uint16_t sensorCount, DistanceDevice *distanceDevice);
+  MotorManager(BTS7960 *motor, DirectionTriggerSensor **sensors, uint8_t sensorCount, DistanceDevice *distanceDevice);
 
   DirectionSensorManager *sensorManager;
 
   void begin();
-  void begin(uint16_t *steps, uint16_t posCount);
-  void setSteps(uint16_t *steps, uint16_t posCount);
+  void begin(uint8_t *steps, uint8_t posCount);
+  void setSteps(uint8_t *steps, uint8_t posCount);
 
   void read();
 
-  void gotoPos(uint16_t pos);
+  void gotoPos(uint8_t pos);
   void stop();
 
   void forward();
@@ -37,8 +46,8 @@ public:
   void reverse();
   void reverse(bool clear);
 
-  uint16_t *getSteps();
-  uint16_t getStepCount();
+  uint8_t *getSteps();
+  uint8_t getStepCount();
 
   void move();
 
@@ -46,39 +55,41 @@ public:
 
   Direction currentDirection();
   Direction lastDirection();
-  uint16_t currentDistance();
-  uint16_t lastTriggeredDistance();
+  uint8_t currentDistance();
+  void setDirection(Direction newDirection);
+  uint8_t lastTriggeredDistance();
 
-  void setSpeed(uint16_t value);
-  uint16_t getSpeed();
-  void printSteps();
-  void printSensors();
+  void setSpeed(uint8_t value);
+  uint8_t getSpeed();
 
   void addSensorListener(SensorTriggered listener);
   void addPositionListener(PositionReached listener);
 
 private:
-  MotorController _motorController;
+  BTS7960 * _motorController;
 
-  uint16_t speed = 255;
+  uint8_t speed = 255;
+  Direction _currentDirection;
+  Direction _lastDirection;
   bool initialized = false;
   bool initializing = false;
   bool travelToStepStarted = false;
-  int16_t travelToStepTrigger = -1;
-  uint16_t lastSensor;
+  int8_t travelToStepTrigger = -1;
+  uint8_t lastSensor;
 
   void clearPositions();
-  void motorOnSensorReachedOnce(uint16_t sensorIndex);
-  void motorOnSensorReached(uint16_t sensorIndex);
+  void motorOnSensorReachedOnce(uint8_t sensorIndex);
+  void motorOnSensorReached(uint8_t sensorIndex);
 
-  bool checkForPos(DirectionTriggerSensor *sensor, uint16_t sensorIndex);
+  bool checkForPos(DirectionTriggerSensor *sensor, uint8_t sensorIndex);
 
-  bool checkForForce(DirectionTriggerSensor *sensor, uint16_t sensorIndex);
+  bool checkForForce(DirectionTriggerSensor *sensor, uint8_t sensorIndex);
 
   void motorOnError(String error);
-  uint16_t stepCount;
-  uint16_t *steps;
-  uint16_t defaultStep;
+  uint8_t stepCount;
+  uint8_t *steps;
+  uint8_t defaultStep;
+  bool _isRunning;
 
   unsigned long _lastDebounceTime = 0;  // the last time the output pin was toggled
   unsigned long _debounceDelay = 500;    // the debounce time; increase if the output flickers
